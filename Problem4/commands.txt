@@ -1,0 +1,13 @@
+docker run -d -p 8080:80 --name mynginx nginx
+
+//open http://localhost:8080/
+
+// cd Problem4   
+
+docker cp index.html mynginx:/usr/share/nginx/html/
+
+//open http://localhost:8080/
+
+//commit: take copy and rename IMAGE_NAME(lower case) after adding any file like index.html
+//بعدل الاسم بعد اضافه الملف 
+docker commit mynginx IMAGE_NAME

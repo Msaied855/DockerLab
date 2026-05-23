@@ -1,0 +1,19 @@
+docker run -d --name app-database -e MYSQL_ROOT_PASSWORD=P4sSw0rd0! -p 3306:3306 mysql:latest
+
+docker ps
+
+docker logs app-database
+
+docker exec -it app-database bash
+
+mysql -u root -p
+
+// SHOW DATABASES;
+
+// CREATE DATABASE testdb;
+
+// SHOW DATABASES;
+
+// exit
+
+// exit

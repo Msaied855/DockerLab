@@ -1,0 +1,29 @@
+// cd Problem5  
+docker build -t python-app .
+
+// docker build --no-cache -t python-app .
+
+docker run python-app
+
+//docker run -it python-app
+
+docker login
+
+docker tag python-app mohamedmm67/python-app
+
+//docker tag SOURCE_IMAGE USERNAME/REPO:TAG
+//docker tag python-app mohamedmm67/python-app:latest
+//docker tag python-app mohamedmm67/python-app:v1
+//docker tag python-app mohamedmm67/python-app:v1.0.1
+//docker tag python-app mohamedmm67/python-app:v1.1.1
+
+docker push mohamedmm67/python-app
+//docker push mohamedmm67/python-app:v1
+//
+docker pull mohamedmm67/python-app
+
+docker run mohamedmm67/python-app
+
+//docker ps
+//docker logs CONTAINER_ID
+//

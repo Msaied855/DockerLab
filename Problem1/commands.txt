@@ -1,0 +1,13 @@
+docker run hello-world
+
+docker ps -a
+
+docker start CONTAINER_ID
+
+// docker start e72f787cd43b
+
+docker rm CONTAINER_ID
+
+// docker rm e72f787cd43b  
+
+docker rmi hello-world

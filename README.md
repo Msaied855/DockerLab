@@ -1,278 +1,202 @@
 # Docker Lab Assignment
 
-This repository contains solutions for Docker Lab tasks.
+> **Author:** Mohamed Saied | **Track:** Full Stack .NET @ ITI | **Topic:** Docker Containerization
 
+---
 
-# Difference Between CMD & ENTRYPOINT
+## Table of Contents
 
-## CMD
+1. [CMD vs ENTRYPOINT](#cmd-vs-entrypoint)
+2. [COPY vs ADD](#copy-vs-add)
+3. [Problem 1 — Hello World](#problem-1--hello-world)
+4. [Problem 2 — Interactive Ubuntu](#problem-2--interactive-ubuntu)
+5. [Problem 3 — MySQL Container](#problem-3--mysql-container)
+6. [Problem 4 — Custom Nginx Server](#problem-4--custom-nginx-server)
+7. [Problem 5 — Python App Containerization](#problem-5--python-app-containerization)
+8. [Concepts Covered](#concepts-covered)
 
-CMD is used to provide default commands for a container.
+---
 
-- It can be overridden when running the container.
-- Used for optional/default execution commands.
+## CMD vs ENTRYPOINT
 
-Example:
+Both instructions define what runs when a container starts — but they behave differently.
+
+### CMD
+
+Sets a **default command** that runs if nothing is specified at runtime. It gets completely replaced if you pass arguments to `docker run`.
 
 ```dockerfile
-CMD ["python","app.py"]
+CMD ["python", "app.py"]
 ```
 
-Run:
-
 ```bash
+# No args → runs: python app.py
 docker run myapp
-```
 
-Docker executes:
-
-```bash
-python app.py
-```
-
-Override example:
-
-```bash
+# With args → overrides CMD entirely, runs: python test.py
 docker run myapp python test.py
 ```
 
 ---
 
-## ENTRYPOINT
+### ENTRYPOINT
 
-ENTRYPOINT defines the main executable command for the container.
-
-- It is harder to override.
-- Used when the container should always run a specific executable.
-
-Example:
+Sets the **main executable** of the container. Runtime arguments are *appended* to it, not replacing it.
 
 ```dockerfile
 ENTRYPOINT ["python"]
 ```
 
-Run:
-
 ```bash
+# Passes app.py as an argument → runs: python app.py
 docker run myapp app.py
 ```
 
-Docker executes:
+---
 
-```bash
-python app.py
-```
+### Key Differences
+
+| | CMD | ENTRYPOINT |
+|---|---|---|
+| **Role** | Default command | Fixed executable |
+| **Override behavior** | Fully replaced by CLI args | CLI args are appended |
+| **Flexibility** | High | Low |
+| **Best for** | Optional/default logic | Single-purpose containers |
 
 ---
 
-## Main Difference
+## COPY vs ADD
 
-| CMD | ENTRYPOINT |
-|---|---|
-| Default command | Main executable |
-| Easily overridden | Less flexible |
-| Optional behavior | Fixed behavior |
+Both copy files into the image. `ADD` just does more than you might expect.
 
----
+### COPY
 
-# Difference Between COPY & ADD
-
-## COPY
-
-COPY is used to copy files and folders from the host machine into the container.
-
-Example:
+Straightforward file copying from host to container. No extras, no surprises.
 
 ```dockerfile
 COPY . /app
 ```
 
-This copies all files into `/app`.
+### ADD
 
----
-
-## ADD
-
-ADD works like COPY but has extra features:
-
-- Can extract compressed files automatically.
-- Can download files from URLs.
-
-Example:
+Works like `COPY` but also:
+- Auto-extracts `.tar`, `.tar.gz`, and other compressed archives
+- Can fetch files from remote URLs
 
 ```dockerfile
-ADD test.tar.gz /app
+ADD archive.tar.gz /app   # Extracts automatically
 ```
 
-This extracts the archive automatically.
+### Key Differences
+
+| | COPY | ADD |
+|---|---|---|
+| **File copy** | ✅ | ✅ |
+| **Auto-extract archives** | ❌ | ✅ |
+| **Download from URL** | ❌ | ✅ |
+| **Recommended default** | ✅ | Only when needed |
+
+> **Rule of thumb:** Use `COPY` by default. Reach for `ADD` only when you need archive extraction or URL downloading.
 
 ---
 
-## Main Difference
+## Problem 1 — Hello World
 
-| COPY | ADD |
-|---|---|
-| Simple file copy | Copy + extra features |
-| Preferred in most cases | Used for advanced operations |
-| More predictable | More complex |
-
----
-
-## Best Practice
-
-Use `COPY` unless you specifically need features provided by `ADD`.
-
----
-
-# Problem 1
-
-## Run hello-world container
+**Goal:** Pull and run the `hello-world` image, inspect containers, then clean up.
 
 ```bash
+# Run the image
 docker run hello-world
-```
 
-## Check all containers
-
-```bash
+# List all containers (including stopped)
 docker ps -a
-```
 
-## Start stopped container
+# Start a stopped container
+docker start <CONTAINER_ID>
 
-```bash
-docker start CONTAINER_ID
-```
+# Remove the container
+docker rm <CONTAINER_ID>
 
-## Remove container
-
-```bash
-docker rm CONTAINER_ID
-```
-
-## Remove image
-
-```bash
+# Remove the image
 docker rmi hello-world
 ```
 
 ---
 
-# Problem 2
+## Problem 2 — Interactive Ubuntu
 
-## Run ubuntu interactive container
+**Goal:** Launch an Ubuntu container interactively, run commands inside it, then tear it down.
 
 ```bash
+# Start Ubuntu with an interactive shell
 docker run -it ubuntu bash
-```
 
-## Run echo command
-
-```bash
+# Inside the container:
 echo docker
-```
-
-## Create file
-
-```bash
 touch hello-docker
-```
-
-## Exit container
-
-```bash
 exit
-```
 
-## Stop container
+# Back on host — stop and remove
+docker stop <CONTAINER_ID>
+docker rm <CONTAINER_ID>
 
-```bash
-docker stop CONTAINER_ID
-```
-
-## Remove container
-
-```bash
-docker rm CONTAINER_ID
-```
-
-## Remove all stopped containers
-
-```bash
+# Or remove all stopped containers at once
 docker container prune -f
 ```
 
-### Comment
-
-The file `hello-docker` is removed after deleting the container because containers are ephemeral.
+> **Why did `hello-docker` disappear?**
+> Containers are ephemeral by design. Any data written inside a container is lost when it's removed, unless you use a **volume** to persist it.
 
 ---
 
-# Problem 3
+## Problem 3 — MySQL Container
 
-## Deploy MySQL database
-
-```bash
-docker run -d --name app-database -e MYSQL_ROOT_PASSWORD=P4sSw0rd0! -p 3306:3306 mysql:latest
-```
-
-## Check running containers
+**Goal:** Deploy a MySQL database in detached mode, verify it's running, and connect to it.
 
 ```bash
+# Run MySQL in the background
+docker run -d \
+  --name app-database \
+  -e MYSQL_ROOT_PASSWORD=P4sSw0rd0! \
+  -p 3306:3306 \
+  mysql:latest
+
+# Verify it's running
 docker ps
-```
 
-## Show logs
-
-```bash
+# Check startup logs
 docker logs app-database
-```
 
-## Access MySQL container
-
-```bash
+# Open a shell inside the container
 docker exec -it app-database bash
-```
 
-## Login to MySQL
-
-```bash
+# Connect to MySQL
 mysql -u root -p
-```
-
-Password:
-
-```text
-P4sSw0rd0!
+# Password: P4sSw0rd0!
 ```
 
 ---
 
-# Problem 4
+## Problem 4 — Custom Nginx Server
 
-## Run Nginx container
+**Goal:** Serve a custom HTML page through Nginx, then save the modified container as a new image.
 
 ```bash
+# Start an Nginx container, map port 8080 → 80
 docker run -d -p 8080:80 --name mynginx nginx
-```
 
-## Copy HTML file
-
-```bash
+# Copy your custom HTML into the container
 docker cp index.html mynginx:/usr/share/nginx/html/
-```
 
-## Commit container
-
-```bash
-docker commit mynginx IMAGE_NAME
+# Commit the container state as a new image
+docker commit mynginx my-custom-nginx
 ```
 
 ---
 
-# Problem 5
+## Problem 5 — Python App Containerization
 
-## Python App
+**Goal:** Package a Python script into a Docker image, run it locally, and push it to Docker Hub.
 
 ### app.py
 
@@ -280,9 +204,7 @@ docker commit mynginx IMAGE_NAME
 print("Hello Docker")
 ```
 
----
-
-## Dockerfile
+### Dockerfile
 
 ```dockerfile
 FROM python:3.11-slim
@@ -291,73 +213,38 @@ WORKDIR /app
 
 COPY . .
 
-CMD ["python","app.py"]
+CMD ["python", "app.py"]
 ```
 
----
-
-## Build Image
+### Build & Run
 
 ```bash
 docker build -t python-app .
-```
-
----
-
-## Run Container
-
-```bash
 docker run python-app
 ```
 
----
-
-## Multi-stage Dockerfile
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY app.py .
-
-CMD ["python","app.py"]
-```
-
----
-
-## Push to Docker Hub
+### Publish to Docker Hub
 
 ```bash
 docker login
-```
-
-```bash
-docker tag python-app YOUR_USERNAME/python-app
-```
-
-```bash
-docker push YOUR_USERNAME/python-app
+docker tag python-app <YOUR_USERNAME>/python-app
+docker push <YOUR_USERNAME>/python-app
 ```
 
 ---
 
-# Docker Concepts Learned
+## Concepts Covered
 
-- Docker Images
-- Containers
-- Dockerfile
-- Interactive Mode
-- Background Containers
-- Environment Variables
-- Port Mapping
-- Docker Hub
-- MySQL Containers
-- Nginx Containers
-- Python Containerization
-
----
-
-# Author
-
-Mohamed Lotfy Mohamed Atya
+| Concept | Description |
+|---|---|
+| **Docker Images** | Build, tag, and manage reusable snapshots |
+| **Containers** | Run, stop, start, and remove isolated environments |
+| **Dockerfile** | Automate image creation with build instructions |
+| **Interactive Mode** | Access a shell inside a running container (`-it`) |
+| **Detached Mode** | Run containers in the background (`-d`) |
+| **Environment Variables** | Pass config at runtime with `-e` |
+| **Port Mapping** | Expose container ports to the host with `-p` |
+| **Docker Hub** | Authenticate and publish images to a public registry |
+| **MySQL Containers** | Deploy stateful database services |
+| **Nginx Containers** | Serve custom static content |
+| **Python Containerization** | Package and ship Python apps as containers |
